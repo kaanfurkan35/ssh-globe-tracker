@@ -1,31 +1,42 @@
 import { IPGeolocation } from '@/types/ssh';
 
-// Using ipapi.co for IP geolocation (free tier: 1000 requests/day)
+// Using ipinfo.io for IP geolocation (free tier: 50,000 requests/month)
 export async function getIPLocation(ip: string): Promise<IPGeolocation | null> {
   try {
-    const response = await fetch(`https://ipapi.co/${ip}/json/`);
-    if (!response.ok) throw new Error('Failed to fetch location');
+    console.log(`Fetching geolocation for IP: ${ip}`);
+    const response = await fetch(`https://ipinfo.io/${ip}/json`);
+    if (!response.ok) {
+      console.warn(`Geolocation API returned ${response.status} for ${ip}`);
+      throw new Error('Failed to fetch location');
+    }
     
     const data = await response.json();
+    console.log(`Geolocation response for ${ip}:`, data);
     
     if (data.error) {
-      console.warn(`Geolocation error for ${ip}:`, data.reason);
+      console.warn(`Geolocation error for ${ip}:`, data.error);
       return null;
     }
     
-    return {
+    // Parse location coordinates from "lat,lng" format
+    const [latitude, longitude] = data.loc ? data.loc.split(',').map(Number) : [0, 0];
+    
+    const result = {
       ip,
-      country_code: data.country_code || '',
-      country_name: data.country_name || '',
-      region_code: data.region_code || '',
-      region_name: data.region_name || '',
+      country_code: data.country || '',
+      country_name: data.country || '', // ipinfo.io uses country code, not full name
+      region_code: data.region || '',
+      region_name: data.region || '',
       city: data.city || '',
       zip_code: data.postal || '',
       time_zone: data.timezone || '',
-      latitude: data.latitude || 0,
-      longitude: data.longitude || 0,
+      latitude: latitude || 0,
+      longitude: longitude || 0,
       metro_code: 0
     };
+    
+    console.log(`Processed geolocation for ${ip}:`, result);
+    return result;
   } catch (error) {
     console.error(`Failed to get location for IP ${ip}:`, error);
     return null;

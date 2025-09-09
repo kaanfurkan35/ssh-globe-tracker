@@ -55,12 +55,16 @@ export const SSHMap: React.FC<SSHMapProps> = ({ locations, onLocationClick }) =>
     markers.current.clear();
 
     locations.forEach(location => {
-      if (location.latitude === 0 && location.longitude === 0) return;
+      if (location.latitude === 0 && location.longitude === 0) {
+        return;
+      }
 
-      // Calculate marker size based on session count
+      // Calculate marker size based on session count (very slow growth)
       const baseSize = 8;
-      const maxSize = 30;
-      const radius = Math.min(maxSize, baseSize + (location.sessionCount * 1.5));
+      const maxSize = 18;
+      // Use square root scaling with very slow growth: baseSize + sqrt(sessionCount) * 0.3
+      const scaleFactor = 0.3;
+      const radius = Math.min(maxSize, baseSize + (Math.sqrt(location.sessionCount) * scaleFactor));
       
       // Choose color based on authentication methods
       const hasPassword = location.methods.includes('password');

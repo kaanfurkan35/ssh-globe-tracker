@@ -99,25 +99,29 @@ export const SSHDashboard: React.FC = () => {
 
       // Get geolocation data
       const geoData = await batchGetIPLocations(uniqueIPs);
+      console.log('Geolocation data:', geoData);
 
       // Merge location data
       const locationArray: LocationData[] = [];
       locationMap.forEach((data, ip) => {
         const geo = geoData.get(ip);
-        if (geo) {
-          locationArray.push({
+        console.log(`Processing IP ${ip}:`, { data, geo });
+        if (geo && geo.latitude !== 0 && geo.longitude !== 0) {
+          const locationData = {
             ...data,
-            country: geo.country_name,
+            country: geo.country_name || geo.country_code,
             city: geo.city,
             latitude: geo.latitude,
             longitude: geo.longitude,
-          });
+          };
+          console.log('Adding location with geo:', locationData);
+          locationArray.push(locationData);
         } else {
-          // Keep IP even without geo data
-          locationArray.push(data);
+          console.log('Skipping location without valid coordinates:', { ip, geo });
         }
       });
 
+      console.log('Final location array:', locationArray);
       setLocations(locationArray);
       toast.success(`Successfully processed ${parsedSessions.length} SSH sessions!`);
       setShowDataInput(false);
@@ -291,16 +295,10 @@ export const SSHDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Recent Connections */}
-      <RecentConnections 
-        sessions={sessions} 
-        onSessionClick={handleSessionClick}
-      />
-
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Map */}
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <MapPin className="h-5 w-5" />
@@ -315,8 +313,15 @@ export const SSHDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Details Panel */}
+        {/* Right Panel - Recent Connections & Details */}
         <div className="space-y-4">
+          {/* Recent Connections */}
+          <RecentConnections 
+            sessions={sessions} 
+            onSessionClick={handleSessionClick}
+          />
+
+          {/* Details Panel */}
           {selectedLocation ? (
             <LocationDetails
               location={selectedLocation}
