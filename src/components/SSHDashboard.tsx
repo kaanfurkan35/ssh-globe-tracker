@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SSHMap } from './SSHMap';
 import { LocationDetails } from './LocationDetails';
+import { RecentConnections } from './RecentConnections';
 import { SSHSession, LocationData } from '@/types/ssh';
 import { parseSSHData, groupSessionsByLocation, formatDuration } from '@/utils/sshParser';
 import { batchGetIPLocations } from '@/utils/geolocation';
@@ -18,7 +19,8 @@ import {
   AlertTriangle,
   Key,
   Upload,
-  RefreshCw
+  RefreshCw,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,6 +45,31 @@ export const SSHDashboard: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showDataInput, setShowDataInput] = useState(false);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      setSshData(content);
+      toast.success('SSH log file loaded successfully!');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read the file');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleSessionClick = (session: SSHSession) => {
+    // Find the location for this session's IP
+    const location = locations.find(loc => loc.ip === session.ip);
+    if (location) {
+      setSelectedLocation(location);
+      toast.info(`Viewing details for ${session.ip}`);
+    }
+  };
 
   const processData = async () => {
     if (!sshData.trim()) {
@@ -130,12 +157,25 @@ export const SSHDashboard: React.FC = () => {
           </p>
         </div>
         <div className="flex space-x-2">
+          <div className="relative">
+            <input
+              type="file"
+              accept=".md,.txt"
+              onChange={handleFileUpload}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              title="Upload SSH log file"
+            />
+            <Button variant="outline">
+              <FileText className="h-4 w-4 mr-2" />
+              Upload File
+            </Button>
+          </div>
           <Button
             variant="outline"
             onClick={() => setShowDataInput(!showDataInput)}
           >
             <Upload className="h-4 w-4 mr-2" />
-            {showDataInput ? 'Hide Input' : 'Load Data'}
+            {showDataInput ? 'Hide Input' : 'Manual Input'}
           </Button>
           <Button
             onClick={processData}
@@ -146,7 +186,7 @@ export const SSHDashboard: React.FC = () => {
             ) : (
               <Activity className="h-4 w-4 mr-2" />
             )}
-            Process Data
+            Refresh & Process
           </Button>
         </div>
       </div>
@@ -167,7 +207,7 @@ export const SSHDashboard: React.FC = () => {
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Paste the contents of your SSH summary file (markdown table format with IP, User, Method, Start, End, Duration columns).
+                Paste the contents of your SSH summary file (markdown table format) or use the "Upload File" button above to select your /var/log/ssh_reports/ssh_summary_last14d.md file.
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -250,6 +290,12 @@ export const SSHDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Connections */}
+      <RecentConnections 
+        sessions={sessions} 
+        onSessionClick={handleSessionClick}
+      />
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
