@@ -13,6 +13,15 @@ case "$1" in
         # Stop any existing service first
         sudo systemctl stop ssh-globe-tracker 2>/dev/null || true
         
+        # Kill any process using port 3001
+        echo "🔍 Checking for processes using port 3001..."
+        PORT_PID=$(sudo lsof -ti:3001 2>/dev/null || true)
+        if [ ! -z "$PORT_PID" ]; then
+            echo "🛑 Killing process using port 3001 (PID: $PORT_PID)..."
+            sudo kill -9 $PORT_PID 2>/dev/null || true
+            sleep 2
+        fi
+        
         # Start the backend directly with proper permissions
         echo "⏳ Starting backend server..."
         cd "$BACKEND_DIR"
@@ -40,6 +49,14 @@ case "$1" in
         echo "🛑 Stopping SSH Globe Tracker..."
         sudo systemctl stop ssh-globe-tracker 2>/dev/null || true
         sudo pkill -f "node server.js" 2>/dev/null || true
+        
+        # Kill any process using port 3001
+        PORT_PID=$(sudo lsof -ti:3001 2>/dev/null || true)
+        if [ ! -z "$PORT_PID" ]; then
+            echo "🛑 Killing process using port 3001 (PID: $PORT_PID)..."
+            sudo kill -9 $PORT_PID 2>/dev/null || true
+        fi
+        
         echo "✅ SSH Globe Tracker stopped"
         ;;
     restart)

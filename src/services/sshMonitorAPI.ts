@@ -1,7 +1,40 @@
 import { SSHSession } from '@/types/ssh';
 
-const API_BASE_URL = 'http://localhost:3001/api';
-const WS_URL = 'ws://localhost:3002';
+// Dynamic API URLs based on current host
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+    
+    // If accessing through port forwarding (port 80/443), use same host:port
+    if (port === '80' || port === '443' || port === '') {
+      return `${protocol}//${hostname}${port ? ':' + port : ''}`;
+    }
+    // Otherwise, assume direct access to 3001
+    return `${protocol}//${hostname}:3001`;
+  }
+  return 'http://localhost:3001';
+};
+
+const getWSURL = () => {
+  if (typeof window !== 'undefined') {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+    
+    // Use same port as HTTP server
+    if (port === '80' || port === '443' || port === '') {
+      return `${wsProtocol}//${hostname}${port ? ':' + port : ''}`;
+    }
+    // Direct access - use port 3001 (same as HTTP)
+    return `${wsProtocol}//${hostname}:3001`;
+  }
+  return 'ws://localhost:3001';
+};
+
+const API_BASE_URL = `${getBaseURL()}/api`;
+const WS_URL = getWSURL();
 
 export interface LiveConnection {
   remoteIP: string;

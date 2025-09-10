@@ -22,24 +22,8 @@ app.use(express.static(path.join(path.dirname(import.meta.url.replace('file://',
 const SSH_SUMMARY_PATH = '/var/log/ssh_reports/ssh_summary_last14d.md';
 const SSH_REPORTS_DIR = '/var/log/ssh_reports/';
 
-// WebSocket server for live connections
-const wss = new WebSocketServer({ port: 3002 });
+// Store connected clients
 const connectedClients = new Set();
-
-wss.on('connection', (ws) => {
-  console.log('Client connected for live SSH monitoring');
-  connectedClients.add(ws);
-  
-  ws.on('close', () => {
-    console.log('Client disconnected');
-    connectedClients.delete(ws);
-  });
-  
-  ws.on('error', (err) => {
-    console.error('WebSocket error:', err);
-    connectedClients.delete(ws);
-  });
-});
 
 // Broadcast to all connected clients
 function broadcastLiveConnection(connectionData) {
@@ -319,13 +303,31 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`SSH Monitor API server running on port ${PORT}`);
-  console.log(`WebSocket server running on port 3002`);
+  console.log(`WebSocket server integrated on port ${PORT}`);
   console.log(`SSH Summary Path: ${SSH_SUMMARY_PATH}`);
   
   // Start monitoring SSH logs
   monitorSSHLogs();
+});
+
+// Create WebSocket server using the same HTTP server
+const wss = new WebSocketServer({ server });
+
+wss.on('connection', (ws) => {
+  console.log('Client connected for live SSH monitoring');
+  connectedClients.add(ws);
+  
+  ws.on('close', () => {
+    console.log('Client disconnected');
+    connectedClients.delete(ws);
+  });
+  
+  ws.on('error', (err) => {
+    console.error('WebSocket error:', err);
+    connectedClients.delete(ws);
+  });
 });
 
 export default app;
