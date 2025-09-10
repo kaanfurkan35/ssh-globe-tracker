@@ -15,6 +15,9 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from frontend dist
+app.use(express.static(path.join(path.dirname(import.meta.url.replace('file://', '')), '..', 'frontend')));
+
 // File paths
 const SSH_SUMMARY_PATH = '/var/log/ssh_reports/ssh_summary_last14d.md';
 const SSH_REPORTS_DIR = '/var/log/ssh_reports/';
@@ -306,6 +309,13 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     connectedClients: connectedClients.size
   });
+});
+
+// Serve React app for all non-API routes
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api/')) {
+    res.sendFile(path.join(path.dirname(import.meta.url.replace('file://', '')), '..', 'frontend', 'index.html'));
+  }
 });
 
 // Start server

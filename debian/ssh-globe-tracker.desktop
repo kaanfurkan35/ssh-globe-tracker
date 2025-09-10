@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SSH Globe Tracker
+Comment=SSH Security Monitor and Global Connection Tracker
+Exec=ssh-globe-tracker start
+Icon=ssh-globe-tracker
+Terminal=false
+StartupNotify=true
+Categories=Network;Security;Monitor;System;
+Keywords=ssh;security;monitor;network;connections;globe;tracker;analysis;
+StartupWMClass=ssh-globe-tracker
+MimeType=text/x-ssh-log;

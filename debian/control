@@ -1,0 +1,25 @@
+Source: ssh-globe-tracker
+Section: net
+Priority: optional
+Maintainer: SSH Globe Tracker Team <support@example.com>
+Build-Depends: debhelper-compat (= 13), nodejs (>= 18), npm, python3, python3-pip
+Standards-Version: 4.6.0
+Homepage: https://github.com/kaanfurkan35/ssh-globe-tracker
+Vcs-Git: https://github.com/kaanfurkan35/ssh-globe-tracker.git
+Vcs-Browser: https://github.com/kaanfurkan35/ssh-globe-tracker
+
+Package: ssh-globe-tracker
+Architecture: all
+Depends: ${misc:Depends}, nodejs (>= 18), python3, python3-pandas, python3-numpy, curl
+Recommends: firefox | chromium-browser | google-chrome-stable
+Description: SSH Security Monitor and Global Connection Tracker
+ Real-time visualization and analysis of SSH connections worldwide.
+ Monitor SSH security with interactive maps, live connection tracking,
+ and comprehensive analytics dashboard.
+ .
+ Features:
+  - Interactive global map visualization
+  - Real-time SSH connection monitoring
+  - Security analytics and reporting
+  - Geolocation-based connection tracking
+  - Risk assessment and alerts

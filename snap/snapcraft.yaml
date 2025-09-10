@@ -1,0 +1,82 @@
+name: ssh-globe-tracker
+version: '1.0.0'
+summary: SSH Security Monitor and Global Connection Tracker
+description: |
+  Real-time visualization and analysis of SSH connections worldwide.
+  Monitor SSH security with interactive maps, live connection tracking,
+  and comprehensive analytics dashboard.
+
+grade: stable
+confinement: devmode  # Using devmode for testing
+base: core22
+
+architectures:
+  - build-on: amd64
+
+apps:
+  ssh-globe-tracker:
+    command: bin/start-app.sh
+    plugs:
+      - network
+      - network-bind
+      - log-observe
+      - system-observe
+      - home
+    environment:
+      PORT: "3001"
+      NODE_ENV: "production"
+
+  web:
+    command: bin/start-web.sh
+    plugs:
+      - network
+      - desktop
+      - desktop-legacy
+      - browser-support
+    environment:
+      BROWSER: "firefox"
+
+parts:
+  app:
+    plugin: dump
+    source: .
+    build-packages:
+      - nodejs
+      - npm
+      - python3
+      - python3-pip
+      - build-essential
+    stage-packages:
+      - nodejs
+      - python3
+      - python3-minimal
+    override-build: |
+      # Build frontend
+      npm install
+      npm run build
+      
+      # Install backend dependencies
+      cd server
+      npm install --production
+      cd ..
+      
+      # Copy everything to install directory
+      cp -r . $CRAFT_PART_INSTALL/
+      
+      # Install Python dependencies
+      python3 -m pip install --break-system-packages pandas numpy || echo "Python deps install failed, continuing..."
+
+  scripts:
+    plugin: dump
+    source: snap/local/
+    organize:
+      start-app.sh: bin/start-app.sh
+      start-web.sh: bin/start-web.sh
+      ssh-globe-tracker.desktop: share/applications/ssh-globe-tracker.desktop
+      ssh-globe-tracker.png: share/pixmaps/ssh-globe-tracker.png
+
+plugs:
+  log-observe:
+    interface: log-observe
+  system-observe:
+    interface: system-observe

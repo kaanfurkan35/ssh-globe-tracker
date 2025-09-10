@@ -1,0 +1,44 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	# Build frontend
+	npm install
+	npm run build
+	
+	# Build backend
+	cd server && npm install --omit=dev
+
+override_dh_auto_install:
+	# Install application files
+	mkdir -p debian/ssh-globe-tracker/opt/ssh-globe-tracker/
+	mkdir -p debian/ssh-globe-tracker/usr/bin/
+	mkdir -p debian/ssh-globe-tracker/usr/share/applications/
+	mkdir -p debian/ssh-globe-tracker/usr/share/pixmaps/
+	mkdir -p debian/ssh-globe-tracker/etc/systemd/system/
+	
+	# Copy application files
+	cp -r dist/ debian/ssh-globe-tracker/opt/ssh-globe-tracker/frontend/
+	cp -r server/ debian/ssh-globe-tracker/opt/ssh-globe-tracker/backend/
+	cp -r py_script/ debian/ssh-globe-tracker/opt/ssh-globe-tracker/scripts/
+	
+	# Install executables
+	install -m 755 debian/ssh-globe-tracker.sh debian/ssh-globe-tracker/usr/bin/ssh-globe-tracker
+	
+	# Install desktop file
+	install -m 644 debian/ssh-globe-tracker.desktop debian/ssh-globe-tracker/usr/share/applications/
+	
+	# Install icon if exists
+	if [ -f debian/ssh-globe-tracker.png ]; then \
+		install -m 644 debian/ssh-globe-tracker.png debian/ssh-globe-tracker/usr/share/pixmaps/; \
+	fi
+	
+	# Install systemd service
+	install -m 644 debian/ssh-globe-tracker.service debian/ssh-globe-tracker/etc/systemd/system/
+
+override_dh_auto_clean:
+	rm -rf dist/
+	rm -rf node_modules/
+	rm -rf server/node_modules/

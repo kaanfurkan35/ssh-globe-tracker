@@ -1,10 +1,58 @@
-# Welcome to your Lovable project
+# SSH Globe Tracker 🌍🔒
 
-## Project info
+Real-time SSH security monitoring with interactive global visualization, comprehensive analytics, and live connection tracking.
 
-**URL**: https://lovable.dev/projects/12c5ce6b-ae55-4b32-b9a7-1047da181e60
+## 🎯 **Quick Ubuntu Installation**
 
-## How can I edit this code?
+### Easy Setup (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/kaanfurkan35/ssh-globe-tracker.git
+cd ssh-globe-tracker
+
+# Run the interactive setup
+./setup-ubuntu.sh
+```
+
+### Manual Installation Options
+```bash
+# Option 1: System installation with service
+./ubuntu-package.sh install
+
+# Option 2: Build Debian package
+./ubuntu-package.sh deb
+
+# Option 3: Build Snap package  
+./ubuntu-package.sh snap
+
+# Option 4: Development mode
+./start.sh
+```
+
+## 📋 **Features**
+
+- 🗺️ **Interactive Global Map** - Visualize SSH connections worldwide
+- 🔴 **Live Monitoring** - Real-time SSH connection tracking
+- 📊 **Security Analytics** - Risk assessment and connection analysis  
+- 📅 **Report Generation** - Automated SSH summary reports with timestamps
+- 🛡️ **Authentication Analysis** - Password vs key-based connection tracking
+- 🌐 **Geolocation** - IP-based geographic mapping
+- ⚡ **WebSocket Updates** - Real-time data streaming
+- 🖥️ **Desktop Integration** - Native Ubuntu application
+
+## 🚀 **Quick Start**
+
+### For Ubuntu Users
+```bash
+# Install as Ubuntu application
+./setup-ubuntu.sh
+
+# Or quick system install
+./ubuntu-package.sh install
+ssh-globe-tracker start
+```
+
+### For Developers
 
 There are several ways of editing your application.
 

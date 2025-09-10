@@ -22,3 +22,29 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Ubuntu/Debian packaging build artifacts
+*.deb
+*.buildinfo
+*.changes
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/ssh-globe-tracker/
+debian/ssh-globe-tracker.debhelper.log
+debian/ssh-globe-tracker.substvars
+
+# Snap packaging build artifacts
+snap/.snapcraft/
+*.snap
+parts/
+stage/
+prime/
+
+# AppImage build artifacts
+*.AppImage
+AppDir/
+
+# Build and packaging logs
+build.log
+package.log

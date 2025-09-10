@@ -1,0 +1,11 @@
+ssh-globe-tracker (1.0.0) unstable; urgency=medium
+
+  * Initial release of SSH Globe Tracker
+  * Real-time SSH connection monitoring and visualization
+  * Interactive global map with geolocation
+  * Security analytics and reporting
+  * Live connection tracking with WebSocket
+  * Report generation with timestamp parsing
+  * Desktop integration with system service
+
+ -- SSH Globe Tracker Team <support@example.com>  Tue, 10 Sep 2025 10:30:00 +0000
