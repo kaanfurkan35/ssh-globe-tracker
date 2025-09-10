@@ -1,17 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { LocationData } from '@/types/ssh';
+import { LocationData, LiveConnection } from '@/types/ssh';
 
 interface SSHMapProps {
   locations: LocationData[];
+  liveConnections?: LiveConnection[];
   onLocationClick: (location: LocationData) => void;
 }
 
-export const SSHMap: React.FC<SSHMapProps> = ({ locations, onLocationClick }) => {
+export const SSHMap: React.FC<SSHMapProps> = ({ locations, liveConnections = [], onLocationClick }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef<Map<string, L.CircleMarker>>(new Map());
+  const liveMarkers = useRef<Map<string, L.CircleMarker>>(new Map());
   const [mapReady, setMapReady] = useState(false);
 
   const initializeMap = () => {
@@ -87,16 +89,6 @@ export const SSHMap: React.FC<SSHMapProps> = ({ locations, onLocationClick }) =>
         fillOpacity: 0.8,
       });
 
-      // Add pulse animation for high-activity IPs
-      if (location.sessionCount > 10) {
-        marker.on('add', () => {
-          const markerElement = marker.getElement() as HTMLElement;
-          if (markerElement) {
-            markerElement.style.animation = 'pulse 2s infinite';
-          }
-        });
-      }
-
       // Add hover effects
       marker.on('mouseover', function() {
         this.setStyle({
@@ -149,9 +141,69 @@ export const SSHMap: React.FC<SSHMapProps> = ({ locations, onLocationClick }) =>
     };
   }, []);
 
+  const updateLiveConnections = () => {
+    if (!map.current || !mapReady) return;
+
+    // Clear existing live markers
+    liveMarkers.current.forEach(marker => {
+      map.current?.removeLayer(marker);
+    });
+    liveMarkers.current.clear();
+
+    liveConnections.forEach(connection => {
+      if (connection.latitude === 0 && connection.longitude === 0) {
+        return;
+      }
+
+      // Create pulsing green marker for live connections
+      const marker = L.circleMarker([connection.latitude, connection.longitude], {
+        radius: 12,
+        fillColor: '#00ff00', // Bright green
+        color: 'rgba(255, 255, 255, 0.8)',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8,
+        className: 'live-connection-marker'
+      });
+
+      // Add pulsing animation
+      marker.on('add', () => {
+        const markerElement = marker.getElement() as HTMLElement;
+        if (markerElement) {
+          markerElement.style.animation = 'pulse 2s infinite';
+          markerElement.style.boxShadow = '0 0 15px rgba(0, 255, 0, 0.6)';
+        }
+      });
+
+      // Create tooltip for live connections
+      const tooltipContent = `
+        <div class="text-sm">
+          <strong>🟢 LIVE CONNECTION</strong><br/>
+          <span><strong>IP:</strong> ${connection.ip}</span><br/>
+          ${connection.user ? `<span><strong>User:</strong> ${connection.user}</span><br/>` : ''}
+          <span><strong>Location:</strong> ${connection.city}, ${connection.country}</span><br/>
+          <span><strong>Time:</strong> ${new Date(connection.timestamp).toLocaleTimeString()}</span>
+        </div>
+      `;
+      
+      marker.bindTooltip(tooltipContent, {
+        direction: 'top',
+        offset: [0, -15],
+        className: 'live-connection-tooltip'
+      });
+
+      marker.addTo(map.current!);
+      liveMarkers.current.set(connection.ip + connection.timestamp, marker);
+    });
+  };
+
   useEffect(() => {
     updateMarkers();
   }, [locations, mapReady]);
+
+  useEffect(() => {
+    updateLiveConnections();
+  }, [liveConnections, mapReady]);
 
   return (
     <div className="relative w-full h-full min-h-[600px]">
@@ -159,9 +211,9 @@ export const SSHMap: React.FC<SSHMapProps> = ({ locations, onLocationClick }) =>
       <style>
         {`
           @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
           }
           
           .leaflet-container {
@@ -174,6 +226,12 @@ export const SSHMap: React.FC<SSHMapProps> = ({ locations, onLocationClick }) =>
             color: hsl(var(--popover-foreground)) !important;
             border-radius: 6px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+          }
+
+          .live-connection-tooltip {
+            background: rgba(0, 255, 0, 0.1) !important;
+            border: 1px solid rgba(0, 255, 0, 0.3) !important;
+            backdrop-filter: blur(10px);
           }
           
           .leaflet-tooltip-top:before {
@@ -188,6 +246,10 @@ export const SSHMap: React.FC<SSHMapProps> = ({ locations, onLocationClick }) =>
           
           .leaflet-control-zoom a:hover {
             background: hsl(var(--accent)) !important;
+          }
+
+          .live-connection-marker {
+            filter: drop-shadow(0 0 8px rgba(0, 255, 0, 0.6));
           }
         `}
       </style>

@@ -7,6 +7,18 @@ export interface SSHSession {
   duration: string;
 }
 
+export interface LiveConnection {
+  ip: string;
+  user?: string;
+  timestamp: string;
+  type: 'login' | 'established';
+  latitude?: number;
+  longitude?: number;
+  country?: string;
+  city?: string;
+  isLocal?: boolean;
+}
+
 export interface LocationData {
   ip: string;
   country: string;
@@ -17,6 +29,7 @@ export interface LocationData {
   sessions: SSHSession[];
   totalDuration: number;
   methods: string[];
+  isLive?: boolean; // New field for live connections
 }
 
 export interface IPGeolocation {

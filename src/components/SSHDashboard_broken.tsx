@@ -24,8 +24,7 @@ import {
   FileText,
   Server,
   Wifi,
-  Download,
-  Calendar
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -40,8 +39,6 @@ export const SSHDashboard: React.FC = () => {
   const [isLiveMonitoring, setIsLiveMonitoring] = useState(false);
   const [showDataInput, setShowDataInput] = useState(false);
   const [dataSource, setDataSource] = useState<string | null>(null);
-  const [lastServerRefresh, setLastServerRefresh] = useState<Date | null>(null);
-  const [reportGeneratedDate, setReportGeneratedDate] = useState<string | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -52,7 +49,6 @@ export const SSHDashboard: React.FC = () => {
       const content = e.target?.result as string;
       setSshData(content);
       setDataSource('file');
-      setReportGeneratedDate(null); // Clear report generation date for file uploads
       toast.success('SSH log file loaded successfully!');
     };
     reader.onerror = () => {
@@ -66,6 +62,7 @@ export const SSHDashboard: React.FC = () => {
     const location = locations.find(loc => loc.ip === session.ip);
     if (location) {
       setSelectedLocation(location);
+      toast.info(`Viewing details for ${session.ip}`);
     }
   };
 
@@ -79,8 +76,6 @@ export const SSHDashboard: React.FC = () => {
       if (response.success && response.data) {
         setSshData(response.data);
         setDataSource('server');
-        setLastServerRefresh(new Date());
-        setReportGeneratedDate(response.reportGeneratedDate || null);
         toast.success('SSH data loaded from server successfully!');
         
         // Process the loaded data
@@ -93,46 +88,6 @@ export const SSHDashboard: React.FC = () => {
       toast.error('Failed to connect to SSH monitor server');
     } finally {
       setIsLoadingFromServer(false);
-    }
-  };
-
-  const autoRefreshFromServer = async (silent: boolean = true) => {
-    if (!silent) {
-      setIsLoadingFromServer(true);
-    }
-
-    try {
-      const response = await sshMonitorAPI.loadSSHSummary();
-      
-      if (response.success && response.data) {
-        setSshData(response.data);
-        setDataSource('server');
-        setLastServerRefresh(new Date());
-        setReportGeneratedDate(response.reportGeneratedDate || null);
-        
-        if (silent) {
-          toast.info('Server data refreshed automatically', { duration: 2000 });
-        } else {
-          toast.success('SSH data loaded from server successfully!');
-        }
-        
-        // Process the loaded data
-        await processData(response.data);
-      } else {
-        if (!silent) {
-          toast.error(response.error || 'Failed to load SSH data from server');
-        }
-        console.error('Auto-refresh failed:', response.error);
-      }
-    } catch (error) {
-      console.error('Error during auto-refresh:', error);
-      if (!silent) {
-        toast.error('Failed to connect to SSH monitor server');
-      }
-    } finally {
-      if (!silent) {
-        setIsLoadingFromServer(false);
-      }
     }
   };
 
@@ -223,10 +178,11 @@ export const SSHDashboard: React.FC = () => {
       console.error('Error loading live connections:', error);
     }
   };
+  };
 
   const handleLiveConnection = (data: any) => {
     if (data.type === 'live_connection') {
-      toast.info(`🔴 Live SSH connection from ${data.data.ip}`, {
+      toast.success(`New SSH connection from ${data.data.ip}`, {
         duration: 3000
       });
       
@@ -259,7 +215,6 @@ export const SSHDashboard: React.FC = () => {
       setLocations([]);
       setSelectedLocation(null);
       setDataSource(null);
-      setReportGeneratedDate(null); // Clear report generation date
       toast.info('Data cleared');
       return;
     }
@@ -311,13 +266,10 @@ export const SSHDashboard: React.FC = () => {
       console.log('Final location array:', locationArray);
       setLocations(locationArray);
       
-      // Set data source based on how data was processed
-      if (!inputData) {
-        // Data came from the textarea (manual input)
+      // Set data source if not already set (manual input)
+      if (!inputData && !dataSource) {
         setDataSource('manual');
-        setReportGeneratedDate(null); // Clear report generation date for manual input
       }
-      // If inputData exists, the data source was already set by loadFromServerFile or handleFileUpload
       
       toast.success(`Successfully processed ${parsedSessions.length} SSH sessions!`);
       setShowDataInput(false);
@@ -329,34 +281,6 @@ export const SSHDashboard: React.FC = () => {
       setIsProcessing(false);
     }
   };
-
-  // Auto-load from server on component mount
-  useEffect(() => {
-    const initialLoad = async () => {
-      console.log('SSH Dashboard: Auto-loading data from server on startup...');
-      await autoRefreshFromServer(false); // Not silent for initial load
-    };
-    
-    initialLoad();
-  }, []); // Empty dependency array - runs only once on mount
-
-  // Set up hourly auto-refresh interval
-  useEffect(() => {
-    const interval = setInterval(() => {
-      console.log('SSH Dashboard: Auto-refreshing data from server (hourly)...');
-      autoRefreshFromServer(true); // Silent refresh
-    }, 60 * 60 * 1000); // 1 hour in milliseconds
-
-    // Store interval for cleanup
-    (window as any).serverRefreshInterval = interval;
-
-    return () => {
-      if ((window as any).serverRefreshInterval) {
-        clearInterval((window as any).serverRefreshInterval);
-        delete (window as any).serverRefreshInterval;
-      }
-    };
-  }, []); // Empty dependency array - sets up interval once
 
   // Cleanup live monitoring on unmount
   useEffect(() => {
@@ -370,7 +294,6 @@ export const SSHDashboard: React.FC = () => {
     };
   }, [isLiveMonitoring]);
 
-  // Calculate statistics
   const stats = {
     totalSessions: sessions.length,
     uniqueIPs: locations.length,
@@ -414,18 +337,6 @@ export const SSHDashboard: React.FC = () => {
                       </>
                     )}
                   </Badge>
-                  {dataSource === 'server' && lastServerRefresh && (
-                    <Badge variant="secondary" className="text-xs">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {lastServerRefresh.toLocaleTimeString()}
-                    </Badge>
-                  )}
-                  {dataSource === 'server' && reportGeneratedDate && (
-                    <Badge variant="outline" className="text-xs">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Report: {reportGeneratedDate}
-                    </Badge>
-                  )}
                 </div>
               )}
             </div>
@@ -438,21 +349,6 @@ export const SSHDashboard: React.FC = () => {
               >
                 <Wifi className={`h-4 w-4 mr-2 ${isLiveMonitoring ? 'animate-pulse text-green-400' : ''}`} />
                 {isLiveMonitoring ? 'Live SSH ON' : 'Monitor Live SSH'}
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => autoRefreshFromServer(false)}
-                disabled={isLoadingFromServer}
-                title="Refresh data from server immediately"
-              >
-                {isLoadingFromServer ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                Refresh
               </Button>
               
               <Button
@@ -537,13 +433,7 @@ export const SSHDashboard: React.FC = () => {
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  <div className="space-y-2">
-                    <p>Paste SSH summary data in markdown table format, upload a file, or load from server.</p>
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Note:</strong> Server file contains only the last 14 days of SSH activity, 
-                      updated daily at 00:10. Today's connections may not appear until tomorrow's update.
-                    </p>
-                  </div>
+                  Paste SSH summary data in markdown table format, upload a file, or load from server.
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -670,10 +560,6 @@ export const SSHDashboard: React.FC = () => {
                       <div className="w-3 h-3 rounded-full bg-destructive"></div>
                       <span>Risk</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-                      <span>Live</span>
-                    </div>
                   </div>
                 </CardTitle>
               </CardHeader>
@@ -706,69 +592,6 @@ export const SSHDashboard: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Live Connections Box */}
-            {isLiveMonitoring && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center space-x-2 text-base">
-                    <Wifi className="h-4 w-4 text-green-500 animate-pulse" />
-                    <span>Live SSH Connections</span>
-                    <Badge variant="outline" className="ml-auto text-xs">
-                      {liveConnections.length}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="max-h-48 overflow-y-auto">
-                    {liveConnections.length > 0 ? (
-                      <div className="space-y-1">
-                        {liveConnections.map((conn, index) => (
-                          <div
-                            key={`${conn.ip}-${index}`}
-                            className="flex items-center justify-between p-3 hover:bg-muted/50 border-b last:border-b-0"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center space-x-2">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">
-                                    {conn.ip}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {conn.city}, {conn.country}
-                                    {conn.user && ` • ${conn.user}`}
-                                    {conn.isLocal && ' • Local'}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(conn.timestamp).toLocaleTimeString()}
-                              </p>
-                              <Badge 
-                                variant="outline" 
-                                className="text-xs mt-1"
-                              >
-                                {conn.type}
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-8 space-y-3">
-                        <Wifi className="h-8 w-8 text-muted-foreground/30" />
-                        <p className="text-xs text-muted-foreground text-center">
-                          No active SSH connections detected
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Location Details */}
             {selectedLocation ? (
