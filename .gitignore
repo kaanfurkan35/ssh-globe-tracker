@@ -48,3 +48,12 @@ AppDir/
 # Build and packaging logs
 build.log
 package.log
+
+# Development and debug files
+debug_parser.js
+create-og-image.html
+bun.lockb
+
+# Build directories
+DEBIAN/
+dist/

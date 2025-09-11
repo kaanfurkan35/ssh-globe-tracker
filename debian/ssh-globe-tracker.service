@@ -6,7 +6,7 @@ Wants=network.target
 [Service]
 Type=simple
 User=www-data
-Group=www-data
+Group=adm
 WorkingDirectory=/opt/ssh-globe-tracker/backend
 ExecStart=/usr/bin/node server.js
 Restart=always
@@ -20,6 +20,7 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/var/log/ssh_reports
+SupplementaryGroups=adm
 
 # Logging
 StandardOutput=journal
