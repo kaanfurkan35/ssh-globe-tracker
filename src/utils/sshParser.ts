@@ -8,7 +8,8 @@ export function parseSSHData(markdownData: string): SSHSession[] {
   // Find the table start (skip header and separator)
   let dataStartIndex = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes('| :-------------- |')) {
+    // Look for markdown table separator line (contains dashes and colons)
+    if (lines[i].includes('|') && lines[i].includes(':') && lines[i].includes('-')) {
       dataStartIndex = i + 1;
       break;
     }
